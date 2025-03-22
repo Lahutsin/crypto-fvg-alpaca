@@ -1,7 +1,7 @@
 ### 
 
 config.json
-
+```
 {
     "API_KEY": "PKCX*********KZ4",
     "API_SECRET": "8jcT***************ZX",
@@ -16,3 +16,4 @@ config.json
     "TAKE_PROFIT_RATIO": 20,
     "TIMEFRAME": "1Day"
 }
+```
