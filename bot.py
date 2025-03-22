@@ -4,7 +4,7 @@ import json
 import time
 import threading
 from datetime import datetime, timedelta, timezone
-import alpaca_trade_api as tradeapi  # Импортируем Alpaca API
+import alpaca_trade_api as tradeapi
 
 class FVGTrader:
     def __init__(self, config_path="config.json"):
@@ -21,7 +21,6 @@ class FVGTrader:
         self.take_profit_ratio = config["TAKE_PROFIT_RATIO"] / 100
         self.limit = config.get("LIMIT", 1000)
 
-        # Инициализируем Alpaca API
         self.alpaca_api = tradeapi.REST(self.api_key, self.api_secret, base_url=config["ALPACA_URL"])
 
     def load_trades(self, symbol):
@@ -37,43 +36,32 @@ class FVGTrader:
     
     def get_historical_data(self, symbol):
         try:
-            # Define the start and end dates for the historical data
             end_date = datetime.now(timezone.utc).replace(microsecond=0)
             start_date = (end_date - timedelta(days=30)).replace(microsecond=0)
 
-            # Convert dates to RFC-3339 format with a 'Z' suffix for UTC
             start_date = start_date.isoformat().replace("+00:00", "Z")
             end_date = end_date.isoformat().replace("+00:00", "Z")
 
-            # Construct the request URL
             url = f"{self.base_url}?symbols={symbol}&timeframe={self.timeframe}&start={start_date}&end={end_date}&limit={self.limit}&sort=asc"
 
-            # Set headers for authentication
             headers = {
                 "accept": "application/json",
                 "APCA-API-KEY-ID": self.api_key,
                 "APCA-API-SECRET-KEY": self.api_secret
             }
 
-            # Make the request
             response = requests.get(url, headers=headers)
-            response.raise_for_status()  # Raise an error for bad status codes
+            response.raise_for_status()
 
-            # Parse the response JSON
             data = response.json()
 
-            # Check if the symbol exists in the response
             if symbol not in data["bars"]:
                 print(f"Error: Symbol {symbol} not found in the data response.")
                 return None
 
-            # Extract bars data for the symbol
             bars_data = data["bars"][symbol]
-
-            # Convert the data to a DataFrame
             bars = pd.DataFrame(bars_data)
 
-            # Now ensure the columns have the correct names
             bars = bars.rename(columns={
                 'l': 'low',   # Rename 'l' to 'low'
                 'h': 'high',  # Rename 'h' to 'high'
@@ -109,14 +97,13 @@ class FVGTrader:
             take_profit = entry_price * (1 + self.take_profit_ratio)
             
             try:
-                # Place an order with Alpaca to buy the symbol at entry price
                 print(f"Placing order for {symbol}: Entry={entry_price}, Stop-Loss={stop_loss}, Take-Profit={take_profit}, QTY={qty}")
                 order = self.alpaca_api.submit_order(
                     symbol=symbol,
-                    qty=qty,  # Adjust the quantity based on your needs
-                    side="buy",  # You can change this to "sell" when closing positions
-                    type="market",  # You can use "limit" for more control
-                    time_in_force="gtc"  # Good-Til-Cancelled order
+                    qty=qty, 
+                    side="buy",  
+                    type="market", 
+                    time_in_force="gtc"
                 )
 
                 trades[symbol] = {
@@ -226,12 +213,10 @@ class FVGTrader:
 
     def get_available_balance_to_trade(self):
         try:
-            # Fetch account information from Alpaca
             account = self.alpaca_api.get_account()
             
-            # Extract the cash balance (float) and convert it to an integer (ignoring decimals)
-            cash_balance = float(account.cash)  # Convert to float first
-            available_balance = int(cash_balance)  # Convert to integer to avoid decimals
+            cash_balance = float(account.cash)
+            available_balance = int(cash_balance)
             
             return available_balance
         except Exception as e:
@@ -245,7 +230,6 @@ class FVGTrader:
             response = requests.get(url, headers=headers)
             data = response.json()
 
-            # Extract ask price
             ap_price = data["quotes"][symbol]["ap"]
             return ap_price
         except Exception as e:
